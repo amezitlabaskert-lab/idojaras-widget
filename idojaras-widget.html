@@ -12,7 +12,6 @@
             background: transparent; 
             overflow: hidden; 
             width: 100%;
-            /* Letiltjuk a kattintást az egész ablakban */
             pointer-events: none !important;
         }
         
@@ -26,22 +25,17 @@
             box-sizing: border-box; 
             user-select: none;
             width: calc(100% - 20px) !important;
-            /* Itt is tiltva marad, így a fehér üres részek "átengedik" a kattintást */
             pointer-events: none !important;
         }
 
-        /* VISSZAKAPCSOLJUK a kattintást a fontos részeken */
-        .now-box, 
-        .forecast-mini-grid, 
-        .soil-compact-row, 
         .chart-container canvas {
             pointer-events: auto !important;
         }
-
-        /* A grafikon fölött váltson mutatóujjra az egér */
         .chart-container canvas {
+            pointer-events: auto !important;
             cursor: pointer !important;
         }
+
 
         .top-row { 
             display: flex; 
