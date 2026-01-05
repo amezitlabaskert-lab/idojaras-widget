@@ -6,25 +6,42 @@
     <title>A Mezítlábas Kert - Időjárás Widget</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet" />
     <style>
-        body { 
+    body { 
             margin: 0; 
             padding: 0; 
             background: transparent; 
             overflow: hidden; 
             width: 100%;
+            /* Letiltjuk a kattintást az egész ablakban */
+            pointer-events: none !important;
         }
         
         .idojaras-widget { 
-    background: #ffffff !important;
-    border: none !important;
-    margin: 10px !important; 
-    padding: 15px 20px; 
-    font-family: 'Plus Jakarta Sans', sans-serif; 
-    color: #636363; 
-    box-sizing: border-box; 
-    user-select: none;
-    width: calc(100% - 20px) !important;
-}
+            background: #ffffff !important;
+            border: none !important;
+            margin: 10px !important; 
+            padding: 15px 20px; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: #636363; 
+            box-sizing: border-box; 
+            user-select: none;
+            width: calc(100% - 20px) !important;
+            /* Itt is tiltva marad, így a fehér üres részek "átengedik" a kattintást */
+            pointer-events: none !important;
+        }
+
+        /* VISSZAKAPCSOLJUK a kattintást a fontos részeken */
+        .now-box, 
+        .forecast-mini-grid, 
+        .soil-compact-row, 
+        .chart-container canvas {
+            pointer-events: auto !important;
+        }
+
+        /* A grafikon fölött váltson mutatóujjra az egér */
+        .chart-container canvas {
+            cursor: pointer !important;
+        }
 
         .top-row { 
             display: flex; 
