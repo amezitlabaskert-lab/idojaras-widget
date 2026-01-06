@@ -30,12 +30,8 @@
 
         .chart-container canvas {
             pointer-events: auto !important;
-        }
-        .chart-container canvas {
-            pointer-events: auto !important;
             cursor: pointer !important;
         }
-
 
         .top-row { 
             display: flex; 
@@ -138,7 +134,6 @@
 
         .weather-img { width: 100%; height: 100%; object-fit: contain; }
         
-        /* KOMPAKT MOBIL NÉZET */
         @media (max-width: 600px) { 
             .idojaras-widget { padding: 10px 12px; }
             .top-row { gap: 8px; }
@@ -177,7 +172,7 @@
 
   <div class="chart-container"><canvas id="finalYearChart"></canvas></div>
   <div class="chart-footer">
-      <span>Éves csapadék (havi bontás)</span>
+      <span id="footer-title">ÉVES CSAPADÉK A MEZÍTLÁBAS KERTBEN</span>
       <span id="chart-summary">...</span>
   </div>
 </div>
@@ -220,6 +215,13 @@
 
     async function updateWidget() {
         try {
+            // Helyszín ellenőrzése
+            const sLat = localStorage.getItem('garden-lat');
+            const sLon = localStorage.getItem('garden-lon');
+            const isPers = !!(sLat && sLon);
+            const lat = isPers ? Number(sLat) : CONFIG.LAT;
+            const lon = isPers ? Number(sLon) : CONFIG.LON;
+
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
             const startOfThisYear = `${now.getFullYear()}-01-01`;
@@ -227,16 +229,13 @@
             const endOfLastYear = `${now.getFullYear()-1}-12-31`;
 
             const res = await Promise.all([
-                fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.LAT}&longitude=${CONFIG.LON}&current=is_day,weather_code&hourly=temperature_2m,relative_humidity_2m,soil_temperature_6cm,soil_moisture_3_to_9cm,surface_pressure&daily=weathercode,temperature_2m_max,temperature_2m_min,et0_fao_evapotranspiration,precipitation_sum&timezone=auto&forecast_days=4`),
-                fetchWithTimeout(`https://archive-api.open-meteo.com/v1/archive?latitude=${CONFIG.LAT}&longitude=${CONFIG.LON}&start_date=${startOfThisYear}&end_date=${todayStr}&daily=precipitation_sum&timezone=auto`),
-                fetchWithTimeout(`https://archive-api.open-meteo.com/v1/archive?latitude=${CONFIG.LAT}&longitude=${CONFIG.LON}&start_date=${startOfLastYear}&end_date=${endOfLastYear}&daily=precipitation_sum&timezone=auto`)
+                fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=is_day,weather_code&hourly=temperature_2m,relative_humidity_2m,soil_temperature_6cm,soil_moisture_3_to_9cm,surface_pressure&daily=weathercode,temperature_2m_max,temperature_2m_min,et0_fao_evapotranspiration,precipitation_sum&timezone=auto&forecast_days=4`),
+                fetchWithTimeout(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${startOfThisYear}&end_date=${todayStr}&daily=precipitation_sum&timezone=auto`),
+                fetchWithTimeout(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${startOfLastYear}&end_date=${endOfLastYear}&daily=precipitation_sum&timezone=auto`)
             ]);
 
             const forecast = res[0];
-            if (!forecast.hourly || !forecast.daily) throw new Error('Hiányos adatok');
-            
             const hIdx = forecast.hourly.time.findIndex(t => new Date(t) > now) - 1;
-            if (hIdx < 0) throw new Error('Nincs aktuális adat');
             
             document.getElementById('now-temp-val').innerText = Math.round(forecast.hourly.temperature_2m[hIdx]);
             document.getElementById('hum-val').innerText = forecast.hourly.relative_humidity_2m[hIdx] + '%';
@@ -261,7 +260,13 @@
                 if (r) prevYearData[new Date(res[2].daily.time[i]).getMonth()] += r;
             });
             
-            document.getElementById('chart-summary').innerText = `IDÉN: ${currYearData.reduce((a,b)=>a+b,0).toFixed(0)} / TAVALY: ${prevYearData.reduce((a,b)=>a+b,0).toFixed(0)} MM`;
+            // Dinamikus feliratok sötétszürkében (#636363)
+            const footerTitle = document.getElementById('footer-title');
+            footerTitle.innerText = isPers ? "CSAPADÉK AZ ÉN KERTEMBEN" : "ÉVES CSAPADÉK A MEZÍTLÁBAS KERTBEN";
+            footerTitle.style.color = "#636363";
+
+            const statusPrefix = isPers ? '<span style="color:#636363; margin-right:4px;">●</span>' : '';
+            document.getElementById('chart-summary').innerHTML = statusPrefix + `IDÉN: ${currYearData.reduce((a,b)=>a+b,0).toFixed(0)} / TAVALY: ${prevYearData.reduce((a,b)=>a+b,0).toFixed(0)} MM`;
 
             const ctx = document.getElementById('finalYearChart');
             if (chartInstance) {
@@ -289,8 +294,7 @@
             let gridHtml = "";
             for(let i=1; i<=3; i++) {
                 const d = new Date(forecast.daily.time[i]);
-                const dayWmo = forecast.daily.weathercode[i];
-                const dayWeather = WMO_MAP[dayWmo] || WMO_MAP[0];
+                const dayWeather = WMO_MAP[forecast.daily.weathercode[i]] || WMO_MAP[0];
                 gridHtml += `<div class="mini-day-card"><div class="mini-day-title">${DAY_NAMES[d.getDay()]}</div><div class="mini-day-icon"><img src="${CONFIG.ICON_BASE_URL}${dayWeather.d}" class="weather-img" alt="${dayWeather.label}"></div><div class="mini-day-temps"><span class="temp-max">${Math.round(forecast.daily.temperature_2m_max[i])}°</span><span class="temp-min">${Math.round(forecast.daily.temperature_2m_min[i])}°</span></div></div>`;
             }
             document.getElementById('daily-grid-container').innerHTML = gridHtml;
