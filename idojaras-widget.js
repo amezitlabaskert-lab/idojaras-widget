@@ -1,7 +1,7 @@
 (function() {
-    const VERSION = "v9.2"; // A te verziószámot
+    const VERSION = "v9.4"; 
 
-    // 1. URL PARAMÉTER FIGYELŐ
+    // 1. URL PARAMÉTER FIGYELŐ (A v9-es extrák része)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lon')) {
         localStorage.setItem('garden-lat', urlParams.get('lat'));
@@ -11,6 +11,7 @@
     const container = document.getElementById('idojaras-widget-root');
     if (!container) return;
 
+    // 2. HTML ÉS JAVÍTOTT CSS (Grid alapú lábléc, keret nélkül)
     container.innerHTML = `
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet" />
     <style>
@@ -30,13 +31,14 @@
         .soil-compact-row { display: flex; justify-content: space-around; background: #fdfdfd; padding: 8px 5px; margin: 10px 0 !important; }
         .soil-item { text-align: center; flex: 1; }
         .soil-label { font-size: 9px; font-weight: 800; color: #aaa; text-transform: uppercase; }
-        .soil-val { font-size: 16px; font-weight: 800; color: #555; white-space: nowrap; }
+        .soil-val { font-size: 16px; font-weight: 800; color: #555; white-space: nowrap; margin-top: 2px; }
         .chart-container { border-top: 1px solid #f0f0f0; padding-top: 10px; height: 110px; position: relative; }
         
-        /* ÚJ LÁBLÉC ELRENDEZÉS */
-        .chart-footer { display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-weight: 800; color: #999; text-transform: uppercase; padding: 8px 5px 0 5px; }
-        .ver-tag { font-size: 8px; color: #ddd; font-weight: 400; } /* Diszkrét verzió középen */
-
+        /* 3 OSZLOPOS LÁBLÉC - FIXÁLT ELRENDEZÉS */
+        .chart-footer { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; font-size: 8px; font-weight: 800; color: #bbb; text-transform: uppercase; padding: 8px 0 0 0; margin-top: 5px; }
+        .footer-left { text-align: left; }
+        .footer-center { text-align: center; color: #eee; font-weight: 400; font-size: 7px; }
+        .footer-right { text-align: right; }
         .weather-img { width: 100%; height: 100%; object-fit: contain; }
 
         @media (max-width: 480px) {
@@ -53,17 +55,16 @@
             <div class="forecast-mini-grid" id="daily-grid-container"></div>
         </div>
         <div class="soil-compact-row">
-            <div class="soil-item"><span class="soil-label">Páratartalom</span><span id="hum-val" class="soil-val">--%</span></div>
-            <div class="soil-item"><span class="soil-label">Talajnedvesség</span><span id="moist-display" class="soil-val">--%</span></div>
-            <div class="soil-item"><span class="soil-label">Vízmérleg</span><span id="evapo-val" class="soil-val">-- mm</span></div>
-            <div class="soil-item"><span class="soil-label">Talajhő</span><span class="soil-val"><span id="s6-val">--</span>°C</span></div>
+            <div class="soil-item"><div class="soil-label">Páratartalom</div><div id="hum-val" class="soil-val">--%</div></div>
+            <div class="soil-item"><div class="soil-label">Talajnedvesség</div><div id="moist-display" class="soil-val">--%</div></div>
+            <div class="soil-item"><div class="soil-label">Vízmérleg</div><div id="evapo-val" class="soil-val">-- mm</div></div>
+            <div class="soil-item"><div class="soil-label">Talajhő</div><div class="soil-val"><span id="s6-val">--</span>°C</div></div>
         </div>
         <div class="chart-container"><canvas id="finalYearChart"></canvas></div>
-        
         <div class="chart-footer">
-            <span id="footer-title">BETÖLTÉS...</span>
-            <span class="ver-tag">${VERSION}</span>
-            <span id="chart-summary">...</span>
+            <div class="footer-left" id="footer-title">...</div>
+            <div class="footer-center">${VERSION}</div>
+            <div class="footer-right" id="chart-summary">...</div>
         </div>
     </div>`;
 
@@ -137,8 +138,8 @@
                 res[2].daily.precipitation_sum.forEach((r, i) => { if (r) prevYearData[new Date(res[2].daily.time[i]).getMonth()] += r; });
                 
                 const footerTitle = document.getElementById('footer-title');
-                footerTitle.innerText = isPers ? "ÉVES CSAPADÉK AZ ÉN KERTEMBEN" : "ÉVES CSAPADÉK A MEZÍTLÁBAS KERTBEN";
-                document.getElementById('chart-summary').innerHTML = (isPers ? '<span style="color:#636363; margin-right:4px;">●</span>' : '') + `IDÉN: ${currYearData.reduce((a,b)=>a+b,0).toFixed(0)} / TAVALY: ${prevYearData.reduce((a,b)=>a+b,0).toFixed(0)} MM`;
+                footerTitle.innerText = isPers ? "ÉVES CSAPADÉK (KERTEM)" : "ÉVES CSAPADÉK (MEZÍTLÁBAS)";
+                document.getElementById('chart-summary').innerHTML = (isPers ? '● ' : '') + `IDÉN: ${currYearData.reduce((a,b)=>a+b,0).toFixed(0)} MM`;
 
                 const ctx = document.getElementById('finalYearChart');
                 if (chartInstance) {
