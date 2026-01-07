@@ -32,9 +32,9 @@
         .soil-label { font-size: 9px; font-weight: 800; color: #aaa; text-transform: uppercase; }
         .soil-val { font-size: 16px; font-weight: 800; color: #555; white-space: nowrap; margin-top: 2px; display: block; }
         .chart-container { border-top: 1px solid #f0f0f0; padding-top: 10px; height: 110px; position: relative; }
-        .chart-footer { display: grid; grid-template-columns: 1.2fr auto 1.2fr; align-items: center; font-size: 10px; font-weight: 800; color: #bbb; text-transform: uppercase; padding: 8px 0 0 0; margin-top: 5px; }
+        .chart-footer { display: grid; grid-template-columns: 1.2fr auto 1.2fr; align-items: center; font-size: 11px; font-weight: 800; color: #636363; text-transform: uppercase; padding: 8px 0 0 0; margin-top: 5px; }
         .footer-left { text-align: left; }
-        .footer-center { text-align: center; color: #eee; font-weight: 400; font-size: 9px; }
+        .footer-center { text-align: center; color: #bbb; font-weight: 400; font-size: 10px; }
         .footer-right { text-align: right; }
         .weather-img { width: 100%; height: 100%; object-fit: contain; }
 
