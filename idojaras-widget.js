@@ -1,5 +1,7 @@
 (function() {
-    // 1. URL PARAMÉTER FIGYELŐ (Link alapú teszteléshez)
+    const VERSION = "v9.2"; // A te verziószámot
+
+    // 1. URL PARAMÉTER FIGYELŐ
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lon')) {
         localStorage.setItem('garden-lat', urlParams.get('lat'));
@@ -9,7 +11,6 @@
     const container = document.getElementById('idojaras-widget-root');
     if (!container) return;
 
-    // 2. HTML ÉS MOBIL-BARÁT CSS
     container.innerHTML = `
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet" />
     <style>
@@ -31,15 +32,17 @@
         .soil-label { font-size: 9px; font-weight: 800; color: #aaa; text-transform: uppercase; }
         .soil-val { font-size: 16px; font-weight: 800; color: #555; white-space: nowrap; }
         .chart-container { border-top: 1px solid #f0f0f0; padding-top: 10px; height: 110px; position: relative; }
+        
+        /* ÚJ LÁBLÉC ELRENDEZÉS */
         .chart-footer { display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-weight: 800; color: #999; text-transform: uppercase; padding: 8px 5px 0 5px; }
+        .ver-tag { font-size: 8px; color: #ddd; font-weight: 400; } /* Diszkrét verzió középen */
+
         .weather-img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* MOBIL OPTIMALIZÁCIÓ */
         @media (max-width: 480px) {
             .idojaras-widget { padding: 10px 12px; }
             .now-temp-text { font-size: 30px; }
             #now-icon-anim { width: 60px !important; height: 60px !important; }
-            .mini-day-icon { width: 35px; height: 35px; }
             .soil-val { font-size: 13px; }
             .chart-container { height: 90px; }
         }
@@ -56,7 +59,12 @@
             <div class="soil-item"><span class="soil-label">Talajhő</span><span class="soil-val"><span id="s6-val">--</span>°C</span></div>
         </div>
         <div class="chart-container"><canvas id="finalYearChart"></canvas></div>
-        <div class="chart-footer"><span id="footer-title">BETÖLTÉS...</span><span id="chart-summary">...</span></div>
+        
+        <div class="chart-footer">
+            <span id="footer-title">BETÖLTÉS...</span>
+            <span class="ver-tag">${VERSION}</span>
+            <span id="chart-summary">...</span>
+        </div>
     </div>`;
 
     if (typeof Chart === 'undefined') {
@@ -73,37 +81,7 @@
         const DAY_NAMES = ["VAS", "HÉT", "KEDD", "SZE", "CSÜ", "PÉN", "SZO"];
         const MONTH_LABELS = ['Jan','Feb','Már','Ápr','Máj','Jún','Júl','Aug','Szep','Okt','Nov','Dec'];
         
-        // TELJES 27 KÓDOS WMO MAP
-        const WMO_MAP = { 
-            0: { label: 'Derült', d: 'clear-day.svg', n: 'clear-night.svg' }, 
-            1: { label: 'Derűs', d: 'partly-cloudy-day.svg', n: 'partly-cloudy-night.svg' }, 
-            2: { label: 'Részben felhős', d: 'partly-cloudy-day.svg', n: 'partly-cloudy-night.svg' }, 
-            3: { label: 'Borult', d: 'cloudy.svg', n: 'cloudy.svg' }, 
-            45: { label: 'Ködös', d: 'fog.svg', n: 'fog.svg' }, 
-            48: { label: 'Zúzmarás köd', d: 'fog.svg', n: 'fog.svg' }, 
-            51: { label: 'Gyenge szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 
-            53: { label: 'Szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 
-            55: { label: 'Erős szitálás', d: 'drizzle.svg', n: 'drizzle.svg' },
-            56: { label: 'Zúzmarás szitálás', d: 'drizzle.svg', n: 'drizzle.svg' },
-            57: { label: 'Erős zúzmarás szitálás', d: 'drizzle.svg', n: 'drizzle.svg' },
-            61: { label: 'Gyenge eső', d: 'rain.svg', n: 'rain.svg' }, 
-            63: { label: 'Eső', d: 'rain.svg', n: 'rain.svg' }, 
-            65: { label: 'Heves eső', d: 'extreme-rain.svg', n: 'extreme-rain.svg' }, 
-            66: { label: 'Ónos eső', d: 'sleet.svg', n: 'sleet.svg' },
-            67: { label: 'Erős ónos eső', d: 'sleet.svg', n: 'sleet.svg' },
-            71: { label: 'Hószállingózás', d: 'snow.svg', n: 'snow.svg' }, 
-            73: { label: 'Havazás', d: 'snow.svg', n: 'snow.svg' }, 
-            75: { label: 'Erős havazás', d: 'extreme-snow.svg', n: 'extreme-snow.svg' },
-            77: { label: 'Hószemcsék', d: 'snow.svg', n: 'snow.svg' },
-            80: { label: 'Gyenge zápor', d: 'partly-cloudy-day-rain.svg', n: 'partly-cloudy-night-rain.svg' }, 
-            81: { label: 'Zápor', d: 'rain.svg', n: 'rain.svg' }, 
-            82: { label: 'Heves zápor', d: 'extreme-day-rain.svg', n: 'extreme-night-rain.svg' }, 
-            85: { label: 'Hózápor', d: 'partly-cloudy-day-snow.svg', n: 'partly-cloudy-night-snow.svg' },
-            86: { label: 'Heves hózápor', d: 'extreme-day-snow.svg', n: 'extreme-night-snow.svg' },
-            95: { label: 'Zivatar', d: 'thunderstorms-day-rain.svg', n: 'thunderstorms-night-rain.svg' }, 
-            96: { label: 'Zivatar jégesővel', d: 'thunderstorms-day-extreme.svg', n: 'thunderstorms-night-extreme.svg' }, 
-            99: { label: 'Heves zivatar', d: 'thunderstorms-extreme-rain.svg', n: 'thunderstorms-extreme-rain.svg' } 
-        };
+        const WMO_MAP = { 0: { label: 'Derült', d: 'clear-day.svg', n: 'clear-night.svg' }, 1: { label: 'Derűs', d: 'partly-cloudy-day.svg', n: 'partly-cloudy-night.svg' }, 2: { label: 'Részben felhős', d: 'partly-cloudy-day.svg', n: 'partly-cloudy-night.svg' }, 3: { label: 'Borult', d: 'cloudy.svg', n: 'cloudy.svg' }, 45: { label: 'Ködös', d: 'fog.svg', n: 'fog.svg' }, 48: { label: 'Zúzmarás köd', d: 'fog.svg', n: 'fog.svg' }, 51: { label: 'Gyenge szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 53: { label: 'Szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 55: { label: 'Erős szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 56: { label: 'Zúzmarás szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 57: { label: 'Erős zúzmarás szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 61: { label: 'Gyenge eső', d: 'rain.svg', n: 'rain.svg' }, 63: { label: 'Eső', d: 'rain.svg', n: 'rain.svg' }, 65: { label: 'Heves eső', d: 'extreme-rain.svg', n: 'extreme-rain.svg' }, 66: { label: 'Ónos eső', d: 'sleet.svg', n: 'sleet.svg' }, 67: { label: 'Erős ónos eső', d: 'sleet.svg', n: 'sleet.svg' }, 71: { label: 'Hószállingózás', d: 'snow.svg', n: 'snow.svg' }, 73: { label: 'Havazás', d: 'snow.svg', n: 'snow.svg' }, 75: { label: 'Erős havazás', d: 'extreme-snow.svg', n: 'extreme-snow.svg' }, 77: { label: 'Hószemcsék', d: 'snow.svg', n: 'snow.svg' }, 80: { label: 'Gyenge zápor', d: 'partly-cloudy-day-rain.svg', n: 'partly-cloudy-night-rain.svg' }, 81: { label: 'Zápor', d: 'rain.svg', n: 'rain.svg' }, 82: { label: 'Heves zápor', d: 'extreme-day-rain.svg', n: 'extreme-night-rain.svg' }, 85: { label: 'Hózápor', d: 'partly-cloudy-day-snow.svg', n: 'partly-cloudy-night-snow.svg' }, 86: { label: 'Heves hózápor', d: 'extreme-day-snow.svg', n: 'extreme-night-snow.svg' }, 95: { label: 'Zivatar', d: 'thunderstorms-day-rain.svg', n: 'thunderstorms-night-rain.svg' }, 96: { label: 'Zivatar jégesővel', d: 'thunderstorms-day-extreme.svg', n: 'thunderstorms-night-extreme.svg' }, 99: { label: 'Heves zivatar', d: 'thunderstorms-extreme-rain.svg', n: 'thunderstorms-extreme-rain.svg' } };
 
         let chartInstance = null;
         function showError(m) { document.getElementById('now-status-label').innerText = m; }
@@ -134,7 +112,6 @@
                     fetchWithTimeout(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${now.getFullYear()-1}-01-01&end_date=${now.getFullYear()-1}-12-31&daily=precipitation_sum&timezone=auto`)
                 ]);
 
-                // VALIDÁCIÓ (v9 újítás)
                 if (!res[0].hourly || !res[1].daily) throw new Error('Adat hiba');
 
                 const forecast = res[0];
@@ -160,7 +137,7 @@
                 res[2].daily.precipitation_sum.forEach((r, i) => { if (r) prevYearData[new Date(res[2].daily.time[i]).getMonth()] += r; });
                 
                 const footerTitle = document.getElementById('footer-title');
-                footerTitle.innerText = isPers ? "ÉVES CSAPADÉK AZ ÉN KERTEMBEN (HAVI BONTÁS)" : "ÉVES CSAPADÉK A MEZÍTLÁBAS KERTBEN (HAVI BONTÁS)";
+                footerTitle.innerText = isPers ? "ÉVES CSAPADÉK AZ ÉN KERTEMBEN" : "ÉVES CSAPADÉK A MEZÍTLÁBAS KERTBEN";
                 document.getElementById('chart-summary').innerHTML = (isPers ? '<span style="color:#636363; margin-right:4px;">●</span>' : '') + `IDÉN: ${currYearData.reduce((a,b)=>a+b,0).toFixed(0)} / TAVALY: ${prevYearData.reduce((a,b)=>a+b,0).toFixed(0)} MM`;
 
                 const ctx = document.getElementById('finalYearChart');
