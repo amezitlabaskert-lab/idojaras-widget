@@ -1,5 +1,5 @@
 (function() {
-    const VERSION = "v9.16"; 
+    const VERSION = "v5.0"; 
 
     // 1. RADIKÁLIS URL-FIGYELŐ ÉS TISZTÍTÓ
     const urlParams = new URLSearchParams(window.location.search);
