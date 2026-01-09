@@ -1,7 +1,6 @@
 (function() {
-    const VERSION = "v9.10"; 
+    const VERSION = "v9.11"; 
 
-    // 1. URL PARAMÉTER FIGYELŐ
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lon')) {
         localStorage.setItem('garden-lat', urlParams.get('lat'));
@@ -11,7 +10,6 @@
     const container = document.getElementById('idojaras-widget-root');
     if (!container) return;
 
-    // 2. HTML ÉS CSS (Tisztított színpaletta, egyetlen elválasztó vonallal)
     container.innerHTML = `
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet" />
     <style>
@@ -19,44 +17,24 @@
         .top-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 5px; }
         .now-box { flex: 1; display: flex; align-items: center; gap: 10px; }
         .now-temp-text { font-size: 38px; font-weight: 800; letter-spacing: -1.5px; color: #636363; }
-        
         .now-status-desc { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: -4px; }
         .mini-day-title { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; }
         .soil-label { font-size: 9px; font-weight: 800; color: #999; text-transform: uppercase; }
-        
         .forecast-mini-grid { flex: 1.5; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .mini-day-card { text-align: center; }
         .mini-day-icon { width: 45px; height: 45px; margin: 2px auto; }
         .mini-day-temps { font-size: 12px; font-weight: 800; color: #636363; }
-        
         .temp-max { color: #e67e22; }
         .temp-min { color: #3498db; margin-left: 2px; }
-        
-        /* Középső adatsor - vonal nélkül */
-        .soil-compact-row { 
-            display: flex; 
-            justify-content: space-around; 
-            padding: 12px 0; 
-            margin: 10px 0 5px 0 !important; 
-        }
+        .soil-compact-row { display: flex; justify-content: space-around; padding: 12px 0; margin: 10px 0 5px 0 !important; }
         .soil-item { text-align: center; flex: 1; }
         .soil-val { font-size: 16px; font-weight: 800; color: #636363; white-space: nowrap; margin-top: 2px; display: block; }
-        
-        /* Grafikon konténer a "lélektani" elválasztó vonallal */
-        .chart-container { 
-            border-top: 1px solid #f0f0f0; 
-            padding-top: 15px; 
-            height: 110px; 
-            position: relative; 
-        }
-        
+        .chart-container { border-top: 1px solid #f0f0f0; padding-top: 15px; height: 110px; position: relative; }
         .chart-footer { display: grid; grid-template-columns: 1.2fr auto 1.2fr; align-items: center; font-size: 11px; font-weight: 800; color: #999; text-transform: uppercase; padding: 10px 0 0 0; }
         .footer-left { text-align: left; }
         .footer-center { text-align: center; font-weight: 400; font-size: 10px; opacity: 0.7; }
         .footer-right { text-align: right; }
-        
         .weather-img { width: 100%; height: 100%; object-fit: contain; }
-
         @media (max-width: 480px) {
             .idojaras-widget { padding: 10px 12px; }
             .now-temp-text { font-size: 30px; }
@@ -176,6 +154,14 @@
 
             } catch (e) { showError('Adat hiba'); console.error("Widget Error:", e); }
         }
+
+        // POSTMESSAGE FIGYELŐ RÉSZ
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'GARDEN_LOCATION_CHANGED') {
+                updateWidget();
+            }
+        });
+
         updateWidget();
         setInterval(updateWidget, CONFIG.CACHE_DURATION);
     }
