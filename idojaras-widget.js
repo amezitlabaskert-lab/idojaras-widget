@@ -1,7 +1,7 @@
 (function() {
-    const VERSION = "v9.8"; 
+    const VERSION = "v9.10"; 
 
-    // 1. URL PARAMÉTER FIGYELŐ (Kert-specifikus koordinátákhoz)
+    // 1. URL PARAMÉTER FIGYELŐ
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lon')) {
         localStorage.setItem('garden-lat', urlParams.get('lat'));
@@ -11,31 +11,50 @@
     const container = document.getElementById('idojaras-widget-root');
     if (!container) return;
 
-    // 2. HTML ÉS CSS (Tisztán, keret nélkül - a keret a HTML-ben lakik)
+    // 2. HTML ÉS CSS (Tisztított színpaletta, egyetlen elválasztó vonallal)
     container.innerHTML = `
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet" />
     <style>
         .idojaras-widget { background: #ffffff !important; padding: 15px 20px; font-family: 'Plus Jakarta Sans', sans-serif; color: #636363; box-sizing: border-box; width: 100% !important; position: relative; }
         .top-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 5px; }
         .now-box { flex: 1; display: flex; align-items: center; gap: 10px; }
-        .now-temp-text { font-size: 38px; font-weight: 800; letter-spacing: -1.5px; }
+        .now-temp-text { font-size: 38px; font-weight: 800; letter-spacing: -1.5px; color: #636363; }
+        
         .now-status-desc { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; margin-top: -4px; }
+        .mini-day-title { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; }
+        .soil-label { font-size: 9px; font-weight: 800; color: #999; text-transform: uppercase; }
+        
         .forecast-mini-grid { flex: 1.5; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .mini-day-card { text-align: center; }
-        .mini-day-title { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; }
         .mini-day-icon { width: 45px; height: 45px; margin: 2px auto; }
-        .mini-day-temps { font-size: 12px; font-weight: 800; }
+        .mini-day-temps { font-size: 12px; font-weight: 800; color: #636363; }
+        
         .temp-max { color: #e67e22; }
         .temp-min { color: #3498db; margin-left: 2px; }
-        .soil-compact-row { display: flex; justify-content: space-around; background: #fdfdfd; padding: 8px 5px; margin: 10px 0 !important; border-radius: 8px; }
+        
+        /* Középső adatsor - vonal nélkül */
+        .soil-compact-row { 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 12px 0; 
+            margin: 10px 0 5px 0 !important; 
+        }
         .soil-item { text-align: center; flex: 1; }
-        .soil-label { font-size: 9px; font-weight: 800; color: #aaa; text-transform: uppercase; }
-        .soil-val { font-size: 16px; font-weight: 800; color: #555; white-space: nowrap; margin-top: 2px; display: block; }
-        .chart-container { border-top: 1px solid #f0f0f0; padding-top: 10px; height: 110px; position: relative; }
-        .chart-footer { display: grid; grid-template-columns: 1.2fr auto 1.2fr; align-items: center; font-size: 11px; font-weight: 800; color: #636363; text-transform: uppercase; padding: 8px 0 0 0; margin-top: 5px; }
+        .soil-val { font-size: 16px; font-weight: 800; color: #636363; white-space: nowrap; margin-top: 2px; display: block; }
+        
+        /* Grafikon konténer a "lélektani" elválasztó vonallal */
+        .chart-container { 
+            border-top: 1px solid #f0f0f0; 
+            padding-top: 15px; 
+            height: 110px; 
+            position: relative; 
+        }
+        
+        .chart-footer { display: grid; grid-template-columns: 1.2fr auto 1.2fr; align-items: center; font-size: 11px; font-weight: 800; color: #999; text-transform: uppercase; padding: 10px 0 0 0; }
         .footer-left { text-align: left; }
-        .footer-center { text-align: center; color: #bbb; font-weight: 400; font-size: 10px; }
+        .footer-center { text-align: center; font-weight: 400; font-size: 10px; opacity: 0.7; }
         .footer-right { text-align: right; }
+        
         .weather-img { width: 100%; height: 100%; object-fit: contain; }
 
         @media (max-width: 480px) {
@@ -66,7 +85,6 @@
         </div>
     </div>`;
 
-    // 3. CHART.JS BETÖLTÉSE HA NINCS
     if (typeof Chart === 'undefined') {
         const chartScript = document.createElement('script');
         chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
@@ -96,7 +114,6 @@
 
         async function updateWidget() {
             try {
-                // DINAMIKUS DÁTUM KEZELÉS
                 const now = new Date();
                 const currYear = now.getFullYear();
                 const prevYear = currYear - 1;
@@ -127,7 +144,6 @@
                 const balance = (forecast.daily.precipitation_sum[0] || 0) - (forecast.daily.et0_fao_evapotranspiration[0] || 0);
                 document.getElementById('evapo-val').innerText = (balance > 0 ? '+' : '') + balance.toFixed(1) + ' mm';
 
-                // ÖSSZEGZÉS - Dinamikusan számolt évek alapján
                 const currYearSum = res[1].daily.precipitation_sum.reduce((a, b) => a + (b || 0), 0);
                 const prevYearSum = res[2].daily.precipitation_sum.reduce((a, b) => a + (b || 0), 0);
                 
@@ -147,7 +163,7 @@
                     chartInstance = new Chart(ctx, { 
                         type: 'bar', 
                         data: { labels: MONTH_LABELS, datasets: [{ data: currYearData, backgroundColor: '#3498db' }, { data: prevYearData, backgroundColor: '#e2e8f0' }] }, 
-                        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#bbb', font: { size: 9, weight: 'bold' } } } } } 
+                        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#999', font: { size: 9, weight: 'bold' } } } } } 
                     });
                 }
 
