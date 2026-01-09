@@ -1,10 +1,12 @@
 (function() {
-    const VERSION = "v9.11"; 
+    const VERSION = "v9.14"; 
 
+    // 1. URL PARAMÉTEREK AZONNALI KEZELÉSE
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lat') && urlParams.has('lon')) {
         localStorage.setItem('garden-lat', urlParams.get('lat'));
         localStorage.setItem('garden-lon', urlParams.get('lon'));
+        localStorage.removeItem('garden-weather-cache');
     }
 
     const container = document.getElementById('idojaras-widget-root');
@@ -73,13 +75,12 @@
     }
 
     function initWeatherLogic() {
-        const CONFIG = { LAT: 47.5136, LON: 19.3735, ICON_BASE_URL: "https://basmilius.github.io/weather-icons/production/fill/all/", CACHE_DURATION: 5 * 60 * 1000 };
+        const CONFIG = { ICON_BASE_URL: "https://basmilius.github.io/weather-icons/production/fill/all/", CACHE_DURATION: 5 * 60 * 1000 };
         const DAY_NAMES = ["VAS", "HÉT", "KEDD", "SZE", "CSÜ", "PÉN", "SZO"];
         const MONTH_LABELS = ['Jan','Feb','Már','Ápr','Máj','Jún','Júl','Aug','Szep','Okt','Nov','Dec'];
         const WMO_MAP = { 0: { label: 'Derült', d: 'clear-day.svg', n: 'clear-night.svg' }, 1: { label: 'Derűs', d: 'partly-cloudy-day.svg', n: 'partly-cloudy-night.svg' }, 2: { label: 'Részben felhős', d: 'partly-cloudy-day.svg', n: 'partly-cloudy-night.svg' }, 3: { label: 'Borult', d: 'cloudy.svg', n: 'cloudy.svg' }, 45: { label: 'Ködös', d: 'fog.svg', n: 'fog.svg' }, 48: { label: 'Zúzmarás köd', d: 'fog.svg', n: 'fog.svg' }, 51: { label: 'Gyenge szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 53: { label: 'Szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 55: { label: 'Erős szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 56: { label: 'Zúzmarás szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 57: { label: 'Erős zúzmarás szitálás', d: 'drizzle.svg', n: 'drizzle.svg' }, 61: { label: 'Gyenge eső', d: 'rain.svg', n: 'rain.svg' }, 63: { label: 'Eső', d: 'rain.svg', n: 'rain.svg' }, 65: { label: 'Heves eső', d: 'extreme-rain.svg', n: 'extreme-rain.svg' }, 66: { label: 'Ónos eső', d: 'sleet.svg', n: 'sleet.svg' }, 67: { label: 'Erős ónos eső', d: 'sleet.svg', n: 'sleet.svg' }, 71: { label: 'Hószállingózás', d: 'snow.svg', n: 'snow.svg' }, 73: { label: 'Havazás', d: 'snow.svg', n: 'snow.svg' }, 75: { label: 'Erős havazás', d: 'extreme-snow.svg', n: 'extreme-snow.svg' }, 77: { label: 'Hószemcsék', d: 'snow.svg', n: 'snow.svg' }, 80: { label: 'Gyenge zápor', d: 'partly-cloudy-day-rain.svg', n: 'partly-cloudy-night-rain.svg' }, 81: { label: 'Zápor', d: 'rain.svg', n: 'rain.svg' }, 82: { label: 'Heves zápor', d: 'extreme-day-rain.svg', n: 'extreme-night-rain.svg' }, 85: { label: 'Hózápor', d: 'partly-cloudy-day-snow.svg', n: 'partly-cloudy-night-snow.svg' }, 86: { label: 'Heves hózápor', d: 'extreme-day-snow.svg', n: 'extreme-night-snow.svg' }, 95: { label: 'Zivatar', d: 'thunderstorms-day-rain.svg', n: 'thunderstorms-night-rain.svg' }, 96: { label: 'Zivatar jégesővel', d: 'thunderstorms-day-extreme.svg', n: 'thunderstorms-night-extreme.svg' }, 99: { label: 'Heves zivatar', d: 'thunderstorms-extreme-rain.svg', n: 'thunderstorms-extreme-rain.svg' } };
 
         let chartInstance = null;
-        function showError(m) { document.getElementById('now-status-label').innerText = m; }
 
         async function fetchWithTimeout(url, timeout = 10000) {
             const controller = new AbortController();
@@ -92,23 +93,17 @@
 
         async function updateWidget() {
             try {
-                const now = new Date();
-                const currYear = now.getFullYear();
-                const prevYear = currYear - 1;
-                const todayStr = now.toISOString().split('T')[0];
-
                 const sLat = localStorage.getItem('garden-lat'), sLon = localStorage.getItem('garden-lon');
-                const isPers = !!(sLat && sLon), lat = isPers ? Number(sLat) : CONFIG.LAT, lon = isPers ? Number(sLon) : CONFIG.LON;
-                
+                const isPers = !!(sLat && sLon), lat = isPers ? Number(sLat) : 47.5136, lon = isPers ? Number(sLon) : 19.3735;
+                const now = new Date(), currYear = now.getFullYear(), prevYear = currYear - 1, todayStr = now.toISOString().split('T')[0];
+
                 const res = await Promise.all([
                     fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=is_day,weather_code&hourly=temperature_2m,relative_humidity_2m,soil_temperature_6cm,soil_moisture_3_to_9cm&daily=weathercode,temperature_2m_max,temperature_2m_min,et0_fao_evapotranspiration,precipitation_sum&timezone=auto&forecast_days=4`),
                     fetchWithTimeout(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${currYear}-01-01&end_date=${todayStr}&daily=precipitation_sum&timezone=auto`),
                     fetchWithTimeout(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${prevYear}-01-01&end_date=${prevYear}-12-31&daily=precipitation_sum&timezone=auto`)
                 ]);
 
-                const forecast = res[0];
-                const hIdx = forecast.hourly.time.findIndex(t => new Date(t) > now) - 1;
-                
+                const forecast = res[0], hIdx = forecast.hourly.time.findIndex(t => new Date(t) > now) - 1;
                 if (hIdx >= 0) {
                     document.getElementById('now-temp-val').innerText = Math.round(forecast.hourly.temperature_2m[hIdx]);
                     document.getElementById('hum-val').innerText = forecast.hourly.relative_humidity_2m[hIdx] + '%';
@@ -118,18 +113,16 @@
                     document.getElementById('now-icon-anim').innerHTML = `<img src="${CONFIG.ICON_BASE_URL}${wInfo[forecast.current.is_day?'d':'n']}" class="weather-img">`;
                     document.getElementById('now-status-label').innerText = wInfo.label;
                 }
-
                 const balance = (forecast.daily.precipitation_sum[0] || 0) - (forecast.daily.et0_fao_evapotranspiration[0] || 0);
                 document.getElementById('evapo-val').innerText = (balance > 0 ? '+' : '') + balance.toFixed(1) + ' mm';
 
                 const currYearSum = res[1].daily.precipitation_sum.reduce((a, b) => a + (b || 0), 0);
                 const prevYearSum = res[2].daily.precipitation_sum.reduce((a, b) => a + (b || 0), 0);
-                
                 const currYearData = new Array(12).fill(0), prevYearData = new Array(12).fill(0);
                 res[1].daily.precipitation_sum.forEach((r, i) => { if (r) currYearData[new Date(res[1].daily.time[i]).getMonth()] += r; });
                 res[2].daily.precipitation_sum.forEach((r, i) => { if (r) prevYearData[new Date(res[2].daily.time[i]).getMonth()] += r; });
 
-                document.getElementById('footer-title').innerText = isPers ? "ÉVES CSAPADÉK A KERTEMBEN (HAVI BONTÁS)" : "ÉVES CSAPADÉK A MEZÍTLÁBAS KERTBEN (HAVI BONTÁS)";
+                document.getElementById('footer-title').innerText = isPers ? "ÉVES CSAPADÉK A KERTEMBEN" : "ÉVES CSAPADÉK A MEZÍTLÁBAS KERTBEN";
                 document.getElementById('chart-summary').innerHTML = (isPers ? '● ' : '') + `IDÉN: ${currYearSum.toFixed(0)} / TAVALY: ${prevYearSum.toFixed(0)} MM`;
 
                 const ctx = document.getElementById('finalYearChart');
@@ -138,24 +131,18 @@
                     chartInstance.data.datasets[1].data = prevYearData;
                     chartInstance.update();
                 } else {
-                    chartInstance = new Chart(ctx, { 
-                        type: 'bar', 
-                        data: { labels: MONTH_LABELS, datasets: [{ data: currYearData, backgroundColor: '#3498db' }, { data: prevYearData, backgroundColor: '#e2e8f0' }] }, 
-                        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#999', font: { size: 9, weight: 'bold' } } } } } 
-                    });
+                    chartInstance = new Chart(ctx, { type: 'bar', data: { labels: MONTH_LABELS, datasets: [{ data: currYearData, backgroundColor: '#3498db' }, { data: prevYearData, backgroundColor: '#e2e8f0' }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#999', font: { size: 9, weight: 'bold' } } } } } });
                 }
-
                 let gridHtml = "";
                 for(let i=1; i<=3; i++) {
                     const d = new Date(forecast.daily.time[i]), dw = WMO_MAP[forecast.daily.weathercode[i]] || WMO_MAP[0];
                     gridHtml += `<div class="mini-day-card"><div class="mini-day-title">${DAY_NAMES[d.getDay()]}</div><div class="mini-day-icon"><img src="${CONFIG.ICON_BASE_URL}${dw.d}" class="weather-img"></div><div class="mini-day-temps"><span class="temp-max">${Math.round(forecast.daily.temperature_2m_max[i])}°</span><span class="temp-min">${Math.round(forecast.daily.temperature_2m_min[i])}°</span></div></div>`;
                 }
                 document.getElementById('daily-grid-container').innerHTML = gridHtml;
-
-            } catch (e) { showError('Adat hiba'); console.error("Widget Error:", e); }
+            } catch (e) { console.error("Widget Error:", e); }
         }
 
-        // POSTMESSAGE FIGYELŐ RÉSZ
+        // --- POSTMESSAGE FIGYELŐ (A gombnyomáshoz) ---
         window.addEventListener('message', function(event) {
             if (event.data && event.data.type === 'GARDEN_LOCATION_CHANGED') {
                 updateWidget();
