@@ -57,7 +57,7 @@
             <div class="soil-item"><div class="soil-label">Páratartalom</div><div id="hum-val" class="soil-val">--%</div></div>
             <div class="soil-item"><div class="soil-label">Talajnedvesség</div><div id="moist-display" class="soil-val">--%</div></div>
             <div class="soil-item"><div class="soil-label">Vízmérleg</div><div id="evapo-val" class="soil-val">-- mm</div></div>
-            <div class="soil-item"><div class="soil-label">Talajhő</div><div class="soil-val"><span id="s6-val">--</span>°C</div></div>
+            <div class="soil-item"><div class="soil-label">Talajhő (6 cm)</div><div class="soil-val"><span id="s6-val">--</span>°C</div></div>
         </div>
         <div class="chart-container"><canvas id="finalYearChart"></canvas></div>
         <div class="chart-footer">
