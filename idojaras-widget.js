@@ -1,5 +1,5 @@
 (function() {
-    const VERSION = "v5.1"; 
+    const VERSION = "v7.0"; 
 
     const urlParams = new URLSearchParams(window.location.search);
     const urlLat = urlParams.get('lat');
