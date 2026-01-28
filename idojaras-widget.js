@@ -17,7 +17,7 @@
     container.innerHTML = `
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet" />
     <style>
-        .idojaras-widget { background: #ffffff !important; padding: 15px 20px; font-family: 'Plus Jakarta Sans', sans-serif; color: #636363; box-sizing: border-box; width: 100% !important; position: relative; }
+        .idojaras-widget { background: #ffffff !important; padding: 15px 20px; font-family: 'Plus Jakarta Sans', sans-serif; color: #636363; box-sizing: border-box; width: 100% !important; position: relative; user-select: none; -webkit-user-select: none; cursor: default; }
         .top-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 5px; }
         .now-box { flex: 1; display: flex; align-items: center; gap: 10px; }
         .now-temp-text { font-size: 38px; font-weight: 800; letter-spacing: -1.5px; color: #636363; }
