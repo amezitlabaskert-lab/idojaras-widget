@@ -1,6 +1,6 @@
 (function () {
     const VERSION = "v8.1";
-    const ICON_BASE = "https://cdn.jsdelivr.net/gh/basmilius/weather-icons@master/production/fill/all/";
+    const ICON_BASE = "https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/fill/svg/";
     const CACHE_TTL = 5 * 60 * 1000; // 5 perc
 
     const urlParams = new URLSearchParams(window.location.search);
